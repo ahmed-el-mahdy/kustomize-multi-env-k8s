@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+patches:
+  - path: patches/replicas.yaml
+    target:
+      kind: Deployment
+  - path: patches/keyvault-dev.yaml
+    target:
+      kind: SecretProviderClass
+      name: azure-kvname
+
+commonLabels:
+  environment: dev
+
+images:
+  - name: myplatformacr.azurecr.io/api-service
+    newTag: dev-latest
+  - name: myplatformacr.azurecr.io/auth-service
+    newTag: dev-latest
+  - name: myplatformacr.azurecr.io/worker-service
+    newTag: dev-latest

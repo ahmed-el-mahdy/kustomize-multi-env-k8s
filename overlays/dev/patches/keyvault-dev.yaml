@@ -1,0 +1,20 @@
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: azure-kvname
+  namespace: platform
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    keyvaultName: "myplatform-dev-kv"
+    tenantId: "00000000-0000-0000-0000-000000000000"
+    objects: |
+      array:
+        - |
+          objectName: ConnectionString
+          objectType: secret
+        - |
+          objectName: JwtSecret
+          objectType: secret
