@@ -1,153 +1,98 @@
 # Kustomize Multi-Environment Kubernetes
 
-Production-ready Kustomize configuration demonstrating the base + overlays pattern for deploying microservices across 4 environments (dev, qa, staging, prod).
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Manifests-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Kustomize](https://img.shields.io/badge/Kustomize-Base_%2B_Overlays-2F6F8F)](https://kubectl.docs.kubernetes.io/)
+[![Azure Key Vault](https://img.shields.io/badge/Azure-Key_Vault_CSI-0078D4?logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/aks/csi-secrets-store-driver)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Live-14B8A6)](https://ahmed-el-mahdy.github.io/)
 
-![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28+-326CE5?logo=kubernetes)
-![Kustomize](https://img.shields.io/badge/Kustomize-5.0+-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
+A working base-and-overlays example for three Kubernetes workloads, with distinct development and production configuration.
 
-## Architecture
+## What This Repository Demonstrates
 
+- Shared Deployments and Services for API, authentication, and worker workloads.
+- Environment-specific namespaces, image tags, replicas, resources, ingress, and Key Vault references.
+- Health probes and an HPA for the API workload.
+- Azure Secrets Store CSI integration without committing application secrets.
+- Local rendering before any cluster-side change.
+
+## Configuration Model
+
+```mermaid
+flowchart LR
+    BASE[Shared base] --> DEV[Development overlay]
+    BASE --> PROD[Production overlay]
+    DEV --> DOUT[dev namespace manifests]
+    PROD --> POUT[prod namespace manifests]
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    GitOps Pipeline                         │
-│  Push → GitHub Actions → Kustomize Build → kubectl apply  │
-└──────────────┬───────────────────────────────────────────┘
-               │
-    ┌──────────┼──────────┬──────────┬──────────┐
-    ▼          ▼          ▼          ▼          
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│  DEV   │ │   QA   │ │STAGING │ │  PROD  │
-│ 1 node │ │2 nodes │ │2 nodes │ │3 nodes │
-│  B4ms  │ │ D4s_v5 │ │ D4s_v5 │ │ D8s_v5 │
-└────────┘ └────────┘ └────────┘ └────────┘
-```
 
-## Directory Structure
+## Implemented Layout
 
-```
+```text
 .
-├── base/                          # Shared base manifests
-│   ├── kustomization.yaml
-│   ├── namespace.yaml
-│   ├── common/                    # Shared ConfigMaps, RBAC
-│   │   ├── kustomization.yaml
-│   │   └── configmap.yaml
-│   ├── api-service/               # Microservice: API Gateway
-│   │   ├── kustomization.yaml
-│   │   ├── deployment.yaml
-│   │   ├── service.yaml
-│   │   └── hpa.yaml
-│   ├── auth-service/              # Microservice: Authentication
-│   │   ├── kustomization.yaml
-│   │   ├── deployment.yaml
-│   │   └── service.yaml
-│   └── worker-service/            # Microservice: Background Jobs
-│       ├── kustomization.yaml
-│       ├── deployment.yaml
-│       └── service.yaml
-├── overlays/
-│   ├── dev/                       # Dev overrides
-│   │   ├── kustomization.yaml
-│   │   ├── namespace.yaml
-│   │   └── patches/
-│   │       ├── replicas.yaml
-│   │       └── keyvault-dev.yaml
-│   ├── qa/
-│   ├── staging/
-│   └── prod/
-│       ├── kustomization.yaml
-│       ├── namespace.yaml
-│       └── patches/
-│           ├── replicas.yaml
-│           ├── resources.yaml
-│           ├── keyvault-prod.yaml
-│           └── ingress-prod.yaml
-└── components/                    # Reusable Kustomize components
-    ├── ingress-nginx/
-    ├── csi-secrets-store/
-    └── monitoring/
+|-- base/
+|   |-- common/
+|   |-- api-service/
+|   |-- auth-service/
+|   `-- worker-service/
+`-- overlays/
+    |-- dev/
+    |   `-- patches/
+    `-- prod/
+        `-- patches/
 ```
 
-## How It Works
-
-### Base Layer
-All services define their core manifests (Deployment, Service, HPA) in `base/`. These are environment-agnostic.
-
-### Overlay Layer
-Each environment folder in `overlays/` applies patches to customize:
-- **Replicas** — scale per environment
-- **Resources** — CPU/memory limits per environment
-- **Secrets** — Key Vault references per environment
-- **Ingress** — domain names per environment
-
-### Build & Deploy
-
-```bash
-# Preview what will be applied
-kustomize build overlays/dev
-
-# Apply to cluster
-kubectl apply -k overlays/dev
-
-# Or with kustomize CLI
-kustomize build overlays/prod | kubectl apply -f -
-```
+Only `dev` and `prod` overlays are implemented. QA and staging are intentionally not claimed until their manifests and validation exist.
 
 ## Environment Differences
 
-| Setting | Dev | QA | Staging | Prod |
-|---------|-----|----|---------|------|
-| Replicas (API) | 1 | 2 | 2 | 3 |
-| CPU Request | 100m | 250m | 250m | 500m |
-| Memory Request | 128Mi | 256Mi | 256Mi | 512Mi |
-| HPA Max | 2 | 4 | 4 | 10 |
-| Key Vault | dev-kv | qa-kv | staging-kv | prod-kv |
-| Ingress Host | *.dev.internal | *.qa.internal | *.staging.example.com | *.example.com |
-| TLS | self-signed | self-signed | Let's Encrypt | Let's Encrypt |
+| Concern | Development | Production |
+| --- | --- | --- |
+| Namespace | `dev` | `prod` |
+| Image tags | `dev-latest` | `prod-v1.0.0` |
+| Replicas | Reduced for low-cost testing | Increased for workload availability |
+| Resources | Base requests and limits | Production resource patches |
+| Key Vault | `myplatform-dev-kv` | `myplatform-prod-kv` |
+| Ingress | Disabled | NGINX ingress with TLS placeholders |
 
-## Key Patterns
+## Render and Validate
 
-### 1. SecretProviderClass per Environment
-Each env patches the Key Vault name to pull secrets from the correct vault:
-```yaml
-# overlays/prod/patches/keyvault-prod.yaml
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: azure-kvname
-spec:
-  parameters:
-    keyvaultName: "myplatform-prod-kv"
-    tenantId: "your-tenant-id"
+Rendering is read-only and should be the first check:
+
+```bash
+kubectl kustomize overlays/dev > dev-rendered.yaml
+kubectl kustomize overlays/prod > prod-rendered.yaml
+
+kubectl apply --dry-run=client -f dev-rendered.yaml
+kubectl apply --dry-run=client -f prod-rendered.yaml
 ```
 
-### 2. Strategic Merge Patches for Scaling
-```yaml
-# overlays/prod/patches/replicas.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-service
-spec:
-  replicas: 3
+If the standalone Kustomize CLI is installed, `kustomize build overlays/dev` and `kustomize build overlays/prod` provide the same rendered output.
+
+## Deploy
+
+Applying changes requires an authenticated cluster context and changes workload state:
+
+```bash
+kubectl apply -k overlays/dev
 ```
 
-### 3. Common Labels
-Overlays add environment labels automatically:
-```yaml
-commonLabels:
-  environment: prod
-  app.kubernetes.io/managed-by: kustomize
-```
+Inspect the rendered output and confirm the active context before applying. Production should be delivered through an approved CI/CD or GitOps workflow rather than an operator laptop.
 
 ## Prerequisites
 
-- `kubectl` >= 1.28
-- `kustomize` >= 5.0 (or built-in `kubectl -k`)
-- AKS cluster with CSI Secrets Store driver installed
-- NGINX Ingress Controller
+- Kubernetes cluster with the Azure Key Vault provider for Secrets Store CSI.
+- Workload or managed identity authorized to read the referenced vault secrets.
+- NGINX Ingress and cert-manager before using the production ingress example.
+- Images available at the configured registry paths.
 
-## License
+## Security and Operations Notes
 
-MIT
+- Replace placeholder tenant IDs, vault names, registry names, and DNS hosts.
+- Pin images to immutable tags or digests for controlled promotion.
+- Add Pod Disruption Budgets, NetworkPolicies, service accounts, and pod security controls for production.
+- Validate custom resources against the cluster versions used by the target environment.
+- Keep secret values in Key Vault; this repository stores only secret object names.
+
+## Status
+
+This is a focused Kubernetes configuration pattern. The development and production overlays render from the same base and are designed to be consumed by CI/CD or GitOps automation.

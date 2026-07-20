@@ -4,18 +4,16 @@ kind: Kustomization
 resources:
   - ../../base
   - namespace.yaml
+  - patches/keyvault-dev.yaml
+
+namespace: dev
 
 patches:
   - path: patches/replicas.yaml
-    target:
-      kind: Deployment
-  - path: patches/keyvault-dev.yaml
-    target:
-      kind: SecretProviderClass
-      name: azure-kvname
 
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
 
 images:
   - name: myplatformacr.azurecr.io/api-service

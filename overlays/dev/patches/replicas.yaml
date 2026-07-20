@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-service
+  namespace: platform
 spec:
   replicas: 1
 ---
@@ -9,6 +10,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
+  namespace: platform
 spec:
   replicas: 1
 ---
@@ -16,5 +18,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: worker-service
+  namespace: platform
 spec:
   replicas: 1
