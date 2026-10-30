@@ -23,6 +23,11 @@ flowchart LR
     BASE --> PROD[Production overlay]
     DEV --> DOUT[dev namespace manifests]
     PROD --> POUT[prod namespace manifests]
+    DOUT --> CHECK[Render and reference validation]
+    POUT --> CHECK
+    CHECK --> REVIEW[Approved target and deployment]
+    REVIEW --> WORKLOAD[API, auth and worker workloads]
+    PROVIDER[External CSI provider and identity prerequisites] -.-> WORKLOAD
 ```
 
 ## Implemented Layout
@@ -96,6 +101,12 @@ Inspect the rendered output and confirm the active context before applying. Prod
 ## Status
 
 This is a focused Kubernetes configuration pattern. The development and production overlays render from the same base and are designed to be consumed by CI/CD or GitOps automation.
+
+## Review Gates
+
+Source review: 30 October 2026. Render both implemented overlays and check namespace, selectors, container/service ports, ConfigMap/Secret references, image identity, HPA target and actual probe contracts. Controller CRDs, CSI identity, registry access, TLS and application readiness need target-specific validation; local rendering does not prove them.
+
+Use the approved cluster context for any server dry-run or apply. Keep a known-good image and desired-state recovery path; HPA, disruption budgets, network policy and secret refresh are separate controls. QA/staging, Gateway API and an automatic rollback controller are not implied by this dev/prod example.
 
 ## Experience Connection
 
