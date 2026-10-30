@@ -96,3 +96,12 @@ Inspect the rendered output and confirm the active context before applying. Prod
 ## Status
 
 This is a focused Kubernetes configuration pattern. The development and production overlays render from the same base and are designed to be consumed by CI/CD or GitOps automation.
+
+## Experience Connection
+
+This three-workload, two-overlay example demonstrates configuration reuse and local render validation; it is not the employer's five-overlay platform or its historical migration topology.
+
+- [Career summary and CV bullets](https://github.com/ahmed-el-mahdy/Career-Advance/blob/main/progress/CV-BULLETS.md) keep reference-project scope separate from production achievements.
+- [End-to-end migration story](https://github.com/ahmed-el-mahdy/Career-Advance/blob/main/progress/STAR-ANSWERS.md#star-9-end-to-end-staging2-migration) covers immutable images, exact CSI key coverage, workload checks and routing gates.
+
+Experience material was reviewed on 30 October 2026. Rendered manifests do not prove live routing, secret access or application health; validate those independently.
